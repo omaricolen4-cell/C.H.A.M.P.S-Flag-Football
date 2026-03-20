@@ -1,0 +1,179 @@
+import { useState } from "react";
+
+export default function ChampsSite() {
+  const [page, setPage] = useState("home");
+  const [step, setStep] = useState(1);
+
+  const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyiKq6G19YIOYD3_RGtSkWdn-qHJY106BJM3PGbV4jQ4cJdtzZuo1Cj0DirMey7vLeL/exec";
+  const PAYMENT_LINK = "https://square.link/u/YOUR_PAYMENT_LINK";
+
+  const handleSubmit = async (e, type) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      await fetch(SHEETS_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify({ ...data, type, status: "PENDING", timestamp: new Date().toISOString() }),
+      });
+    } catch (error) {
+      alert("Submission error. Try again.");
+      return;
+    }
+
+    if (type === "player") {
+      window.location.href = PAYMENT_LINK;
+    } else {
+      setPage("coach-success");
+    }
+
+    e.target.reset();
+    setStep(1);
+  };
+
+  const Progress = ({ current }) => (
+    <div className="w-full mb-6">
+      <div className="flex justify-between text-xs mb-2">
+        <span>Step {current} of 2</span>
+        <span>{current === 1 ? "Info" : "Agreement"}</span>
+      </div>
+      <div className="w-full bg-gray-300 h-2 rounded">
+        <div className="bg-red-600 h-2 rounded" style={{ width: `${current * 50}%` }}></div>
+      </div>
+    </div>
+  );
+
+  if (page === "coach-success") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white p-6">
+        <div className="bg-white text-black p-10 rounded-3xl text-center max-w-md">
+          <h2 className="text-2xl font-bold mb-4">Application Received</h2>
+          <p className="mb-4">Your application is under review.</p>
+          <p className="text-sm mb-6">Status: Pending Approval</p>
+          <button onClick={() => setPage("home")} className="btn">Return Home</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (page === "coach") {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
+        <h1 className="text-3xl font-bold mb-2">Coach Registration</h1>
+        <p className="mb-6 text-gray-300 max-w-xl w-full">
+          All coaching roles are <strong>100% volunteer</strong> and require approval.
+        </p>
+
+        <form onSubmit={(e) => handleSubmit(e, "coach")} className="max-w-xl w-full bg-white text-black p-8 rounded-3xl shadow-2xl">
+          <Progress current={step} />
+
+          {step === 1 && (
+            <div className="grid gap-4">
+              <input className="input" name="Name" placeholder="Full Name" required />
+              <input className="input" name="Email" placeholder="Email" required />
+              <input className="input" name="Phone" placeholder="Phone" required />
+              <input className="input" name="City" placeholder="City" required />
+              <input className="input" name="Experience" placeholder="Experience" />
+              <button type="button" onClick={() => setStep(2)} className="btn">Next</button>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="grid gap-4">
+              <div className="bg-gray-100 p-4 rounded border text-sm">
+                <strong>Background Check & Volunteer Agreement:</strong>
+                <p className="mt-2">
+                  I understand this is a volunteer coaching position and I consent to a background check. I agree to uphold league standards and ensure a safe environment for all players.
+                </p>
+              </div>
+
+              <label className="flex gap-2 items-start">
+                <input type="checkbox" required />
+                <span>I agree to volunteer terms and background check</span>
+              </label>
+
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setStep(1)} className="btn-secondary">Back</button>
+                <button type="submit" className="btn">Submit Application</button>
+              </div>
+            </div>
+          )}
+        </form>
+      </div>
+    );
+  }
+
+  if (page === "player") {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-6">
+        <h1 className="text-3xl font-bold mb-6">Player Registration</h1>
+
+        <form onSubmit={(e) => handleSubmit(e, "player")} className="max-w-xl w-full bg-white text-black p-8 rounded-3xl shadow-2xl">
+          <Progress current={step} />
+
+          {step === 1 && (
+            <div className="grid gap-4">
+              <input className="input" name="Player Name" placeholder="Player Name" required />
+              <input className="input" name="Age" placeholder="Age" required />
+              <input className="input" name="Parent Name" placeholder="Parent" required />
+              <input className="input" name="Email" placeholder="Email" required />
+              <input className="input" name="Phone" placeholder="Phone" required />
+              <button type="button" onClick={() => setStep(2)} className="btn">Next</button>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="grid gap-4">
+              <div className="bg-gray-100 p-4 rounded border text-sm">
+                <strong>Injury & Liability Waiver:</strong>
+                <p className="mt-2">
+                  I understand that participation in CHAMPS Youth Flag Football involves risk of injury. I release CHAMPS from liability and accept all risks.
+                </p>
+              </div>
+
+              <label className="flex gap-2">
+                <input type="checkbox" required /> I agree
+              </label>
+
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setStep(1)} className="btn-secondary">Back</button>
+                <button type="submit" className="btn">Submit & Pay</button>
+              </div>
+            </div>
+          )}
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <div className="relative h-screen flex items-center justify-center text-center">
+
+        <img src="https://i.imgur.com/fgqj6Nw.png" className="absolute inset-0 w-full h-full object-cover opacity-90" />
+        <div className="absolute inset-0 bg-black/40"></div>
+
+        <div className="relative z-10 max-w-2xl">
+          <h1 className="text-4xl sm:text-7xl font-extrabold mb-4 tracking-widest">C.H.A.M.P.S</h1>
+          <p className="text-lg sm:text-2xl mb-6">Youth Flag Football League</p>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button onClick={() => setPage("player")} className="btn">Register Player</button>
+            <button onClick={() => setPage("coach")} className="btn-secondary">Become Coach</button>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .input { padding: 14px; border-radius: 10px; border: 1px solid #ccc; }
+        .btn { background: #dc2626; color: white; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; }
+        @media (min-width: 640px) { .btn { width: auto; } }
+        .btn-secondary { border: 2px solid white; padding: 14px; border-radius: 12px; }
+      `}</style>
+    </div>
+  );
+}
